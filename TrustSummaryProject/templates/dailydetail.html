@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Trust Summary Report List</title>
+		<link rel="stylesheet" href="static/style.css">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+		<style>
+				form  { display: table;      }
+				p     { display: table-row;  }
+				label { display: table-cell; }
+				input { display: table-cell; }
+			* {
+				box-sizing: border-box;
+				font-family: -apple-system, BlinkMacSystemFont, "segoe ui", roboto, oxygen, ubuntu, cantarell, "fira sans", "droid sans", "helvetica neue", Arial, sans-serif;
+				font-size: 16px;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+				}
+		</style>
+
+	</head>
+	<script>
+	    function isNumberKey(txt, evt) {
+      var charCode = (evt.which) ? evt.which : evt.keyCode;
+      if (charCode == 46) {
+        //Check if the text already contains the . character
+        if (txt.value.indexOf('.') === -1) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        if (charCode > 31 &&
+          (charCode < 48 || charCode > 57))
+          return false;
+      }
+      return true;
+    }
+	</script>
+	<body style="background-color: #B0C4DE;">
+		<div style="padding:20px;">
+			<div style="width: 90%;">
+    	  {% if entries %}
+		  <h1>Trust Summary detail for  {{ entries.dte }}</h1>
+				<br>
+		  <p>Welcome back, {{ username }}!</p>
+				<br>
+			<form action="{{ url_for('logout') }}">
+				<table>
+					<tr>
+						<td align="center"> <input type="submit" value="Logout"></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+
+<br>
+
+			<form action="{{ url_for('dailydetail',dayid=dayid) }}" method="post">
+				<p style="color:red;">{{ msg }}</p>
+				<p>
+				<label for="SiteManager" style="padding:3px 5px 5px 5px;">Site Manager:</label>
+				<input type="text" value="{{ entries.SiteManager }}"  name="SiteManager" style="padding:3px 5px 5px 5px;">
+				</p>
+				<p>
+				<label for="PatientsInCorridor" style="padding:3px 5px 5px 5px;">Patients In Corridor:</label>
+				<input type="number" value="{{ entries.PatientsInCorridor }}"  name="PatientsInCorridor" style="padding:3px 5px 5px 5px;">
+				</p>
+				<p>
+				<label for="EscalationLevel" style="padding:3px 5px 5px 5px;">Escalation Level:</label>
+				<input type="text" value="{{ entries.EscalationLevel }}"  name="EscalationLevel" style="padding:3px 5px 5px 5px;">
+				</p>
+				<p>
+				<label for="TriageTimehrs" style="padding:3px 5px 5px 5px;">Triage Time(hrs):</label>
+				<input type="text" value="{{ entries.TriageTimehrs }}"  name="TriageTimehrs" style="padding:3px 5px 5px 5px;" onkeypress="return isNumberKey(this, event);">
+				</p>
+				<p>
+				<label for="PatientsAwaitingBeds" style="padding:3px 5px 5px 5px;">Patients Awaiting Beds:</label>
+				<input type="number" value="{{ entries.PatientsAwaitingBeds }}"  name="PatientsAwaitingBeds" style="padding:3px 5px 5px 5px;">
+				</p>
+				<p>
+				<label for="WaitingTimeMajorshrs" style="padding:3px 5px 5px 5px;">Waiting Time Majors(hrs):</label>
+				<input type="text" value="{{ entries.WaitingTimeMajorshrs }}"  name="WaitingTimeMajorshrs" style="padding:3px 5px 5px 5px;" onkeypress="return isNumberKey(this, event);">
+				</p>
+				<p>
+				<label for="TotalPatientsED" style="padding:3px 5px 5px 5px;">Total Patients in ED:</label>
+				<input type="number" value="{{ entries.TotalPatientsED }}"  name="TotalPatientsED" style="padding:3px 5px 5px 5px;">
+				</p>
+				<br>
+				<input type="submit" value="Save Changes">
+			</form>
+			<br>
+			<Div style="padding:20px;">
+			<form action="{{ url_for('summarylist') }}" >
+
+					<input type="submit" value="Back to Summary Page">
+			</form>
+				<br>
+			{% if 'Admin' in acctype %}
+				<form action="{{ url_for('deleterecord',dayid=dayid) }}" >
+
+					<input type="submit" value="Delete Record" onclick="return confirm('Are you sure you want to delete the record?')">
+				</form>
+			{% else %}
+				<br>
+			{% endif %}
+			</Div>
+
+			{% else %}
+				<p>No record found.</p>
+			{% endif %}
+			</div>
+		</body>
+</html>

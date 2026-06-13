@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Trust Summary Report List</title>
+		<link rel="stylesheet" href="static/style.css">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+		<script src="static/numbers.js"></script>
+				<style>
+				form  { display: table;      }
+				p     { display: table-row;  }
+				label { display: table-cell; }
+				input { display: table-cell; }
+		</style>
+	</head>
+	<body style="background-color: #B0C4DE;">
+		<div style="padding:20px;">
+			<div style="width: 90%;">
+
+			  <h1>Create new daily record</h1>
+			  <p>Logged in as: {{ username }}!</p>
+			<form action="{{ url_for('logout') }}">
+				<table>
+					<tr>
+						<td align="center"> <input type="submit" value="Logout"></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+
+				  <p></p>
+
+
+			<form action="{{ url_for('adddailyrecord') }}" method="post">
+				<p style="color:red;">{{ msg }}</p>
+				<p>
+				<label for="ReportDate" style="padding:3px 5px 5px 5px;">Date:</label>
+				<input type="date" value=""  name="ReportDate" style="padding:3px 5px 5px 5px;">
+					</p>
+				<P>
+				<label for="SiteManager" style="padding:3px 5px 5px 5px;">Site Manager:</label>
+				<input type="text" value=""  name="SiteManager" style="padding:3px 5px 5px 5px;">
+				</p>
+				<P>
+				<label for="PatientsInCorridor" style="padding:3px 5px 5px 5px;">Patients In Corridor:</label>
+				<input type="number" value="="  name="PatientsInCorridor" style="padding:3px 5px 5px 5px;">
+				</P>
+				<P>
+				<label for="EscalationLevel" style="padding:3px 5px 5px 5px;">Escalation Level:</label>
+				<input type="text" value=""  name="EscalationLevel" style="padding:3px 5px 5px 5px;"> (Red, Amber or Green)
+				</P>
+				<P>
+				<label for="TriageTimehrs" style="padding:3px 5px 5px 5px;">Triage Time(hrs):</label>
+				<input type="text" value=""  name="TriageTimehrs" style="padding:3px 5px 5px 5px;" onkeypress="return isNumberKey(this, event);">
+				</P>
+				<P>
+				<label for="PatientsAwaitingBeds" style="padding:3px 5px 5px 5px;">Patients Awaiting Beds:</label>
+				<input type="number" value=""  name="PatientsAwaitingBeds" style="padding:3px 5px 5px 5px;">
+				</P>
+				<P>
+				<label for="WaitingTimeMajorshrs" style="padding:3px 5px 5px 5px;">Waiting Time Majors(hrs):</label>
+				<input type="text" value=""  name="WaitingTimeMajorshrs" style="padding:3px 5px 5px 5px;" onkeypress="return isNumberKey(this, event);">
+				</P>
+				<P>
+				<label for="TotalPatientsED" style="padding:3px 5px 5px 5px;">Total Patients in ED:</label>
+				<input type="number" value=""  name="TotalPatientsED" style="padding:3px 5px 5px 5px;">
+				</P>
+				<br>
+				<input type="submit" value="Save Record">
+			</form>
+			<br>
+			<br>
+				<form action="{{ url_for('summarylist') }}" >
+
+
+					<input type="submit" value="Back to Summary Page">
+			</form>
+				<br>
+			</div>
+		</body>
+</html>

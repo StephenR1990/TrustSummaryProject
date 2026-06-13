@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+{% block title %}{% endblock %}
+
+{% block content %}
+
+{% endblock %}
+	<head>
+		<meta charset="utf-8">
+		<title>Trust Summary Report List</title>
+		<link rel="stylesheet" href="static/style.css">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+	</head>
+	<body style="background-color: #B0C4DE;">
+	<div style="padding:20px;">
+		<div style="width: 90%;">
+    	  <h1>Trust Summary Report List</h1>
+		  <p>Welcome back, {{ username }}!</p>
+			<form action="{{ url_for('logout') }}">
+				<table>
+					<tr>
+						<td align="center"> <input type="submit" value="Logout"></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+		<div class="msg">{{ msg }}</div>
+		<div style="padding:20px;">
+			<table border="1">
+
+				  <tr>
+					<th>ID</th>
+					<th>Date</th>
+					<th>Site Manager</th>
+					<th>Patients in Corridor</th>
+				  	<th>Escalation Level</th>
+				  	<th>Triage Time(hrs)</th>
+				  	<th>Patients Awaiting Beds</th>
+				  	<th>Waiting Time Majors(hrs)</th>
+				  	<th>Total Patients In ED</th>
+					  <th>View/Edit Record</th>
+				  </tr>
+			 {% if entries %}
+				{% for entry in entries %}
+					<tr>
+						<td>{{ entry.id }}</td>
+						<td>{{ entry.dte }}</td>
+						<td>{{ entry.SiteManager }}</td>
+						<td>{{ entry.PatientsInCorridor }}</td>
+						<td>{{ entry.EscalationLevel }}</td>
+						<td>{{ entry.TriageTimehrs }}</td>
+						<td>{{ entry.PatientsAwaitingBeds }}</td>
+						<td>{{ entry.WaitingTimeMajorshrs }}</td>
+						<td>{{ entry.TotalPatientsED }}</td>
+						<td><form action="{{ url_for('dailydetail',dayid=entry.id) }}" >
+							<div align="center">
+							<input type="submit" value="View/Edit" id="{{ entry.id }}">
+							</div>
+						</form></td>
+					</tr>
+
+                {% endfor %}
+
+			</table>
+			{% else %}
+            <p>No entries found.</p>
+        	{% endif %}
+			<br>
+			<form action="{{ url_for('openadddailyrecord') }}">
+
+					<input type="submit" value="Add new daily record">
+			</form>
+		</div>
+
+	</div>
+		</body>
+</html>
