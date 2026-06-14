@@ -41,11 +41,12 @@
 					</div>
 					<div class="form-field">
 						<label for="EscalationLevel">Escalation Level</label>
-							<select name="EscalationLevel" id="EscalationLevel">
-								<option value="Green" {% if entries.EscalationLevel == 'Green' %}selected="Green"{% endif %}>Green</option>
-								<option value="Amber" {% if entries.EscalationLevel == 'Amber' %}selected="Amber"{% endif %}>Amber</option>
-								<option value="Red" {% if entries.EscalationLevel == 'Red' %}selected="Red"{% endif %}>Red</option>
-							</select>
+						<select name="EscalationLevel" id="EscalationLevel">
+                            <option selected value="{{ entries.EscalationLevel }}">{{ entries.EscalationLevel }}</option>
+							<option value="Green">Green</option>
+							<option value="Amber">Amber</option>
+							<option value="Red">Red</option>
+						</select>
 					</div>
 					<div class="form-field">
 						<label for="TriageTimehrs">Triage Time (hrs)</label>
