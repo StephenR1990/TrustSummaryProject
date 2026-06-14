@@ -1,77 +1,80 @@
 <!DOCTYPE html>
-<html>
-{% block title %}{% endblock %}
-
-{% block content %}
-
-{% endblock %}
-	<head>
-		<meta charset="utf-8">
-		<title>Trust Summary Report List</title>
-		<link rel="stylesheet" href="static/style.css">
-		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
-	</head>
-	<body style="background-color: #B0C4DE;">
-	<div style="padding:20px;">
-		<div style="width: 90%;">
-    	  <h1>Trust Summary Report List</h1>
-		  <p>Welcome back, {{ username }}!</p>
-			<form action="{{ url_for('logout') }}">
-				<table>
-					<tr>
-						<td align="center"> <input type="submit" value="Logout"></td>
-					</tr>
-				</table>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Trust Summary Report List</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+</head>
+<body>
+	<main class="page-shell">
+		<header class="page-header">
+			<div>
+				<h1>Trust Summary Report List</h1>
+				<p>Welcome back, {{ username }}.</p>
+			</div>
+			<form class="inline-form" action="{{ url_for('logout') }}">
+				<input class="secondary" type="submit" value="Logout">
 			</form>
-		</div>
-		<div class="msg">{{ msg }}</div>
-		<div style="padding:20px;">
-			<table border="1">
+		</header>
 
-				  <tr>
-					<th>ID</th>
-					<th>Date</th>
-					<th>Site Manager</th>
-					<th>Patients in Corridor</th>
-				  	<th>Escalation Level</th>
-				  	<th>Triage Time(hrs)</th>
-				  	<th>Patients Awaiting Beds</th>
-				  	<th>Waiting Time Majors(hrs)</th>
-				  	<th>Total Patients In ED</th>
-					  <th>View/Edit Record</th>
-				  </tr>
-			 {% if entries %}
-				{% for entry in entries %}
-					<tr>
-						<td>{{ entry.id }}</td>
-						<td>{{ entry.dte }}</td>
-						<td>{{ entry.SiteManager }}</td>
-						<td>{{ entry.PatientsInCorridor }}</td>
-						<td>{{ entry.EscalationLevel }}</td>
-						<td>{{ entry.TriageTimehrs }}</td>
-						<td>{{ entry.PatientsAwaitingBeds }}</td>
-						<td>{{ entry.WaitingTimeMajorshrs }}</td>
-						<td>{{ entry.TotalPatientsED }}</td>
-						<td><form action="{{ url_for('dailydetail',dayid=entry.id) }}" >
-							<div align="center">
-							<input type="submit" value="View/Edit" id="{{ entry.id }}">
-							</div>
-						</form></td>
-					</tr>
-
-                {% endfor %}
-
-			</table>
-			{% else %}
-            <p>No entries found.</p>
-        	{% endif %}
-			<br>
-			<form action="{{ url_for('openadddailyrecord') }}">
-
+		<section class="card">
+			<div class="card-header">
+				<div>
+					<h2>Daily records</h2>
+					<p class="form-hint">Review, edit, or add daily trust summary records.</p>
+				</div>
+				<form class="inline-form" action="{{ url_for('openadddailyrecord') }}">
 					<input type="submit" value="Add new daily record">
-			</form>
-		</div>
+				</form>
+			</div>
 
-	</div>
-		</body>
+			<div class="msg">{{ msg }}</div>
+
+			{% if entries %}
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Date</th>
+							<th>Site Manager</th>
+							<th>Corridor</th>
+							<th>Escalation</th>
+							<th>Triage hrs</th>
+							<th>Awaiting Beds</th>
+							<th>Majors hrs</th>
+							<th>Total ED</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for entry in entries %}
+						<tr>
+							<td>{{ entry.id }}</td>
+							<td>{{ entry.dte }}</td>
+							<td>{{ entry.SiteManager }}</td>
+							<td>{{ entry.PatientsInCorridor }}</td>
+							<td><span class="status-pill status-{{ entry.EscalationLevel|lower }}">{{ entry.EscalationLevel }}</span></td>
+							<td>{{ entry.TriageTimehrs }}</td>
+							<td>{{ entry.PatientsAwaitingBeds }}</td>
+							<td>{{ entry.WaitingTimeMajorshrs }}</td>
+							<td>{{ entry.TotalPatientsED }}</td>
+							<td>
+								<form class="inline-form" action="{{ url_for('dailydetail', dayid=entry.id) }}">
+									<input type="submit" value="View/Edit" id="{{ entry.id }}">
+								</form>
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% else %}
+			<div class="empty-state">No entries found.</div>
+			{% endif %}
+		</section>
+	</main>
+</body>
 </html>

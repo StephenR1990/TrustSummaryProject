@@ -148,7 +148,7 @@ def dailydetail(dayid):
         if request.form['TotalPatientsED'] == "":
             TotalPatientsED = 0
         else:
-            TotalPatientsED = int(request.form['PatientsAwaitingBeds'])
+            TotalPatientsED = int(request.form['TotalPatientsED'])
 
         TriageTime = request.form['TriageTimehrs']
 
