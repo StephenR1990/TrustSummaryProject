@@ -1,6 +1,8 @@
 import re
 
 from flask import Flask, request, session, g, redirect, url_for, render_template, flash
+#for encrypting passwords
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3, os
 
 from flask import Flask
@@ -38,6 +40,12 @@ def get_db():
         g.sqlite_db = connect_db()
     return g.sqlite_db
 
+def check_login(f):
+    def check(*args, **kwargs):
+        if "loggedin" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return check
 
 @app.teardown_appcontext
 def close_db(error):
@@ -113,109 +121,108 @@ def register():
 
 
 @app.route('/summarylist')
+# Check if the user is logged in
+@check_login
 def summarylist():
     db = get_db()
-    # Check if the user is logged in
-    if 'loggedin' in session:
-        # User is logged in take them to the summary page
-
         cur = db.execute('select * from DailySummary order by id desc')
         entries = cur.fetchall()
         return render_template('summarylist.html', username=session['username'], entries=entries)
-    # User is not logged in redirect to login page
-    return redirect(url_for('login'))
+
+
 
 
 @app.route('/dailydetail/<string:dayid>', methods=['GET', 'POST'])
+# Check if the user is logged in
+@check_login
 def dailydetail(dayid):
     db = get_db()
-    # Check if the user is logged in
-    #if 'loggedin' in session:
+
         # User is logged in take them to the daily detail page for the chosen record and for a POST request
         #  validate the fields, save the record and return to the summary
-    if request.method == 'POST':
-        # if the user is posting data validation checks are done before commiting changes to the database
+        if request.method == 'POST':
+            # if the user is posting data validation checks are done before commiting changes to the database
 
-        # check if number fields are blank insert a 0
-        if request.form['PatientsInCorridor'] == "":
-            PatientsInCorridor = 0
+            # check if number fields are blank insert a 0
+            if request.form['PatientsInCorridor'] == "":
+                PatientsInCorridor = 0
+            else:
+                PatientsInCorridor = int(request.form['PatientsInCorridor'])
+            if request.form['PatientsAwaitingBeds'] == "":
+                PatientsAwaitingBeds = 0
+            else:
+                PatientsAwaitingBeds = int(request.form['PatientsAwaitingBeds'])
+            if request.form['TotalPatientsED'] == "":
+                TotalPatientsED = 0
+            else:
+                TotalPatientsED = int(request.form['TotalPatientsED'])
+
+            TriageTime = request.form['TriageTimehrs']
+
+            WaitingTimeMajors = request.form['WaitingTimeMajorshrs']
+
+            EscalationLevel = request.form['EscalationLevel']
+            Smanager = request.form['SiteManager']
+
+
+            if len(Smanager) == 0:
+                msg = "You must enter a site manager"
+            elif not Smanager.isalpha():
+                msg = "Site manager must only contain letters"
+            elif len(Smanager) > 50:
+                msg = "Site manager name cannot exceed 50 characters"
+            elif PatientsInCorridor > 50:
+                msg = "Number of patients waiting in the corridor cannot exceed 50"
+            elif PatientsInCorridor < 0:
+                msg = "Number of patients waiting in the corridor cannot be less than 0 "
+            elif not re.match(r'[A-Za-z]+', EscalationLevel):
+                msg = "Escalation level can only contain letters"
+            elif EscalationLevel not in ("Red", "Amber", "Green"):
+                msg = "Escalation level must be set as Red, Amber or Green"
+            elif TotalPatientsED > 200:
+                msg = "Number of patients in ED cannot exceed 200"
+            elif TotalPatientsED < 0:
+                msg = "Number of patients in ED cannot  be less than 0"
+            else:
+                db.execute("UPDATE DailySummary SET SiteManager=?,PatientsInCorridor=?,EscalationLevel=?,"
+                           "TriageTimehrs=?,PatientsAwaitingBeds=?,WaitingTimeMajorshrs=?,TotalPatientsED=? "
+                           "WHERE id =?", (Smanager, PatientsInCorridor, EscalationLevel, TriageTime,
+                                           PatientsAwaitingBeds, WaitingTimeMajors, TotalPatientsED, dayid))
+                db.commit()
+                msg = "Record successfully saved"
+                cur = db.execute('select * from DailySummary order by id desc')
+                entries = cur.fetchall()
+                return render_template('summarylist.html', username=session['username'], entries=entries, msg=msg)
+
+            cur = db.execute('select * from DailySummary WHERE id =?', (dayid,))
+            entries = cur.fetchone()
+            return render_template('dailydetail.html', username=session['username'], acctype=session['accounttype'],
+                                   entries=entries, dayid=dayid, msg=msg)
         else:
-            PatientsInCorridor = int(request.form['PatientsInCorridor'])
-        if request.form['PatientsAwaitingBeds'] == "":
-            PatientsAwaitingBeds = 0
-        else:
-            PatientsAwaitingBeds = int(request.form['PatientsAwaitingBeds'])
-        if request.form['TotalPatientsED'] == "":
-            TotalPatientsED = 0
-        else:
-            TotalPatientsED = int(request.form['TotalPatientsED'])
 
-        TriageTime = request.form['TriageTimehrs']
-
-        WaitingTimeMajors = request.form['WaitingTimeMajorshrs']
-
-        EscalationLevel = request.form['EscalationLevel']
-        Smanager = request.form['SiteManager']
-
-
-        if len(Smanager) == 0:
-            msg = "You must enter a site manager"
-        elif not Smanager.isalpha():
-            msg = "Site manager must only contain letters"
-        elif len(Smanager) > 50:
-            msg = "Site manager name cannot exceed 50 characters"
-        elif PatientsInCorridor > 50:
-            msg = "Number of patients waiting in the corridor cannot exceed 50"
-        elif PatientsInCorridor < 0:
-            msg = "Number of patients waiting in the corridor cannot be less than 0 "
-        elif not re.match(r'[A-Za-z]+', EscalationLevel):
-            msg = "Escalation level can only contain letters"
-        elif EscalationLevel not in ("Red", "Amber", "Green"):
-            msg = "Escalation level must be set as Red, Amber or Green"
-        elif TotalPatientsED > 200:
-            msg = "Number of patients in ED cannot exceed 200"
-        elif TotalPatientsED < 0:
-            msg = "Number of patients in ED cannot  be less than 0"
-        else:
-            db.execute("UPDATE DailySummary SET SiteManager=?,PatientsInCorridor=?,EscalationLevel=?,"
-                       "TriageTimehrs=?,PatientsAwaitingBeds=?,WaitingTimeMajorshrs=?,TotalPatientsED=? "
-                       "WHERE id =?", (Smanager, PatientsInCorridor, EscalationLevel, TriageTime,
-                                       PatientsAwaitingBeds, WaitingTimeMajors, TotalPatientsED, dayid))
-            db.commit()
-            msg = "Record successfully saved"
-            cur = db.execute('select * from DailySummary order by id desc')
-            entries = cur.fetchall()
-            return render_template('summarylist.html', username=session['username'], entries=entries, msg=msg)
-
-        cur = db.execute('select * from DailySummary WHERE id =?', (dayid,))
-        entries = cur.fetchone()
-        return render_template('dailydetail.html', username=session['username'], acctype=session['accounttype'],
-                               entries=entries, dayid=dayid, msg=msg)
-    else:
-
-        cur = db.execute('select * from DailySummary WHERE id =?', (dayid,))
-        entries = cur.fetchone()
-        return render_template('dailydetail.html', username=session['username'], acctype=session['accounttype'],
-                               entries=entries, dayid=dayid)
-    # User is not logged in redirect to login page
-    #return redirect(url_for('login'))
-
-
-@app.route('/adddailyrecord')
-def openadddailyrecord():
-    # Check if the user is logged in
-    if 'loggedin' in session:
-        # User is logged in take them to the summary page
-        return render_template('adddailyrecord.html', username=session['username'])
+            cur = db.execute('select * from DailySummary WHERE id =?', (dayid,))
+            entries = cur.fetchone()
+            return render_template('dailydetail.html', username=session['username'], acctype=session['accounttype'],
+                                   entries=entries, dayid=dayid)
     # User is not logged in redirect to login page
     return redirect(url_for('login'))
 
 
+@app.route('/adddailyrecord')
+# Check if the user is logged in
+@check_login
+def openadddailyrecord():
+        # User is logged in take them to add record page
+        return render_template('adddailyrecord.html', username=session['username'])
+    # User is not logged in redirect to login page
+
+
+
 @app.route('/adddailyrecord', methods=['POST'])
+# Check if the user is logged in
+@check_login
 def adddailyrecord():
     db = get_db()
-    # Check if the user is logged in
-    #if 'loggedin' in session:
         # User is logged in take them to the daily detail page for the chosen record and for a POST request
         #  validate the fields, save the record and return to the summary
     if request.method == 'POST':
@@ -278,15 +285,14 @@ def adddailyrecord():
         cur = db.execute('select * from DailySummary order by id desc')
         entries = cur.fetchall()
         return render_template('summarylist.html', username=session['username'], entries=entries)
-    # User is not logged in redirect to login page
-    #return redirect(url_for('login'))
+
 
 
 @app.route('/summarylist/<string:dayid>')
+# Check if the user is logged in
+@check_login
 def deleterecord(dayid):
     db = get_db()
-    # Check if the user is logged in
-    if 'loggedin' in session:
         # Delete the chosen record
         cur = db.execute('DELETE from DailySummary WHERE id =?', (dayid,))
         db.commit()
@@ -294,8 +300,6 @@ def deleterecord(dayid):
         cur = db.execute('select * from DailySummary order by id desc')
         entries = cur.fetchall()
         return render_template('summarylist.html', username=session['username'], entries=entries)
-    # User is not logged in redirect to login page
-    return redirect(url_for('login'))
 
 
 @app.route('/logout')
