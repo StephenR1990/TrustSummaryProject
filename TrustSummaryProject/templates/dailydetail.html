@@ -42,6 +42,7 @@
 					<div class="form-field">
 						<label for="EscalationLevel">Escalation Level</label>
 						<select name="EscalationLevel" id="EscalationLevel">
+							<option selected value="">{{ entries.EscalationLevel }}</option>
 							<option value="Green">Green</option>
 							<option value="Amber">Amber</option>
 							<option value="Red">Red</option>
@@ -74,7 +75,7 @@
 		<section class="card">
 			<div class="card-header">
 				<div>
-					<h2>Danger zone</h2>
+					<h2>Admin Functions</h2>
 					<p class="form-hint">Deleting a record cannot be undone.</p>
 				</div>
 				<form class="inline-form" action="{{ url_for('deleterecord', dayid=dayid) }}">
