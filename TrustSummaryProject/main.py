@@ -33,6 +33,12 @@ def init_db():
         db = get_db()
         with app.open_resource('schema.sql', mode='r') as f:
             db.executescript(f.read())
+            #encrypt the exisiting users passwords
+            db.execute("UPDATE users SET password=? WHERE username=?",
+            (generate_password_hash("Test1234"), "SRogers"))
+            db.execute("UPDATE users SET password=? WHERE username=?",
+            (generate_password_hash("Test6789"), "SJones"))
+
         db.commit()
 
 
@@ -73,7 +79,7 @@ def login():
 
             acc = cursor.fetchone()
             # if account is found set the session
-            if acc:
+            if acc and check_password_hash(acc['password'], password):
                 session['loggedin'] = True
                 session['userid'] = acc['id']
                 session['username'] = acc['username']
@@ -109,10 +115,14 @@ def register():
             msg = "Fullname can only contain letters"
         elif not username or not password or not fullname:
             msg = 'Please fill out all fields'
+        elif len(password) < 8:
+            msg = 'Password must be at least 8 characters long'
         else:
+            #encrypt the password before inserting into the database
+            encyrpt_pass = generate_password_hash(password)
             # if checks are passed add new user
             db.execute("INSERT INTO users(username, password, fullname,accounttype) VALUES (?,?,?,?)",
-                       (username, password, fullname, acctype))
+                       (username, encyrpt_pass, fullname, acctype))
             db.commit()
             msg = 'Registration successful, please log in'
 
@@ -236,7 +246,7 @@ def adddailyrecord():
         if request.form['PatientsAwaitingBeds'] == "":
             PatientsAwaitingBeds = 0
         else:
-            PatientsAwaitingBeds = int(request.form['PatientsAwaitingBeds'])
+            PatientsAwaitingBeds = int(request.form['TotalPatientsED'])
         if request.form['TotalPatientsED'] == "":
             TotalPatientsED = 0
         else:
