@@ -6,6 +6,7 @@ import sqlite3, os
 from functools import wraps
 from flask import Flask
 from dotenv import load_dotenv
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -15,8 +16,6 @@ load_dotenv()
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, os.getenv('DATABASE', 'data.db')),
     SECRET_KEY=os.getenv('SECRET_KEY'),
-    #USERNAME=os.getenv('USERNAME', 'admin'),
-    #PASSWORD=os.getenv('PASSWORD', 'default')
 ))
 
 
@@ -33,12 +32,11 @@ def init_db():
         db = get_db()
         with app.open_resource('schema.sql', mode='r') as f:
             db.executescript(f.read())
-            #encrypt the exisiting users passwords
-            db.execute("UPDATE users SET password=? WHERE username=?",
-            (generate_password_hash("Test1234"), "SRogers"))
-            db.execute("UPDATE users SET password=? WHERE username=?",
-            (generate_password_hash("Test6789"), "SJones"))
 
+        db.execute("UPDATE users SET password=? WHERE username=?",
+                   (generate_password_hash("Test1234"), "SRogers"))
+        db.execute("UPDATE users SET password=? WHERE username=?",
+                   (generate_password_hash("Test6789"), "SJones"))
         db.commit()
 
 
@@ -62,6 +60,12 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
+#a function to check values that should be int are and if not defualt to 0 otherwise a value error will crash the app
+def check_int(value, default=0):
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -72,14 +76,15 @@ def login():
         # Check if "username" and "password"  requests from the form
         if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
             # create variables for username and password submitted from the login form
-            username = request.form['username']
-            password = request.form['password']
-            cursor = db.execute("SELECT * from users where username = ? AND password = ?",
-                                (username, password))
+            username = request.form.get('username')
+            password = request.form.get('password')
+            cursor = db.execute("SELECT * from users where username = ?",
+                                (username,))
 
             acc = cursor.fetchone()
-            # if account is found set the session
+            # if account is found and the passwords match set the session
             if acc and check_password_hash(acc['password'], password):
+                session.clear() #clear any existing session data
                 session['loggedin'] = True
                 session['userid'] = acc['id']
                 session['username'] = acc['username']
@@ -99,19 +104,19 @@ def register():
     # Check if fields are filled out
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'fullname' in request.form:
         # Create variables for easy access
-        username = request.form['username']
-        password = request.form['password']
-        fullname = request.form['fullname']
-        acctype = request.form['acounttype']
+        username = request.form.get('username')
+        password = request.form.get('password')
+        fullname = request.form.get('fullname')
+        acctype = request.form.get('accounttype')
         cursor = db.execute("SELECT * from users where username = ?", (username,))
 
         acc = cursor.fetchone()
         # validations checks
         if acc:
             msg = "An account with this username is already in use"
-        elif not re.match(r'[A-Za-z0-9]+', username):
+        elif not re.match(r'^[A-Za-z0-9]+$', username):
             msg = "Username can only contain characters and numbers"
-        elif not re.match(r'[A-Za-z]+', fullname):
+        elif not re.match(r'^[A-Za-z]+$', fullname):
             msg = "Fullname can only contain letters"
         elif not username or not password or not fullname:
             msg = 'Please fill out all fields'
@@ -157,27 +162,27 @@ def dailydetail(dayid):
         # if the user is posting data validation checks are done before commiting changes to the database
 
         # check if number fields are blank insert a 0
-        if request.form['PatientsInCorridor'] == "":
+        if request.form.get('PatientsInCorridor') == "":
             PatientsInCorridor = 0
         else:
-            PatientsInCorridor = int(request.form['PatientsInCorridor'])
+            PatientsInCorridor = check_int(request.form.get('PatientsInCorridor'))
         if request.form['PatientsAwaitingBeds'] == "":
             PatientsAwaitingBeds = 0
         else:
-            PatientsAwaitingBeds = int(request.form['PatientsAwaitingBeds'])
+            PatientsAwaitingBeds = check_int(request.form.get('PatientsAwaitingBeds'))
         if request.form['TotalPatientsED'] == "":
             TotalPatientsED = 0
         else:
-            TotalPatientsED = int(request.form['TotalPatientsED'])
+            TotalPatientsED = check_int(request.form.get('TotalPatientsED'))
 
-        TriageTime = request.form['TriageTimehrs']
+        TriageTime = request.form.get('TriageTimehrs','')
 
-        WaitingTimeMajors = request.form['WaitingTimeMajorshrs']
+        WaitingTimeMajors = request.form.get('WaitingTimeMajorshrs','')
 
-        EscalationLevel = request.form['EscalationLevel']
-        Smanager = request.form['SiteManager']
+        EscalationLevel = request.form.get('EscalationLevel','')
+        Smanager = request.form.get('SiteManager','')
 
-
+        #validation check on submitted datayes i have done this
         if len(Smanager) == 0:
             msg = "You must enter a site manager"
         elif not Smanager.isalpha():
@@ -188,7 +193,7 @@ def dailydetail(dayid):
             msg = "Number of patients waiting in the corridor cannot exceed 50"
         elif PatientsInCorridor < 0:
             msg = "Number of patients waiting in the corridor cannot be less than 0 "
-        elif not re.match(r'[A-Za-z]+', EscalationLevel):
+        elif not re.match(r'^[A-Za-z]+$', EscalationLevel):
             msg = "Escalation level can only contain letters"
         elif EscalationLevel not in ("Red", "Amber", "Green"):
             msg = "Escalation level must be set as Red, Amber or Green"
@@ -239,26 +244,35 @@ def adddailyrecord():
     if request.method == 'POST':
         # if the user is posting data validation checks are done before inserting record into the database
         # check if number fields are blank insert a 0
-        if request.form['PatientsInCorridor'] == "":
+        if request.form.get('PatientsInCorridor') == "":
             PatientsInCorridor = 0
         else:
-            PatientsInCorridor = int(request.form['PatientsInCorridor'])
-        if request.form['PatientsAwaitingBeds'] == "":
+            PatientsInCorridor = check_int(request.form.get('PatientsInCorridor'))
+        if request.form.get('PatientsAwaitingBeds') == "":
             PatientsAwaitingBeds = 0
         else:
-            PatientsAwaitingBeds = int(request.form['TotalPatientsED'])
-        if request.form['TotalPatientsED'] == "":
+            PatientsAwaitingBeds = check_int(request.form.get('PatientsAwaitingBeds'))
+        if request.form.get('TotalPatientsED') == "":
             TotalPatientsED = 0
         else:
-            TotalPatientsED = int(request.form['PatientsAwaitingBeds'])
-        Dte = request.form['ReportDate']
-        Smanager = request.form['SiteManager']
+            TotalPatientsED = check_int(request.form.get('TotalPatientsED'))
+        #check the date is a valid date 
+        Dte = request.form.get('ReportDate', '')
+        try:
+            datetime.strptime(Dte, '%d-%m-%Y')
+        except (ValueError, TypeError):
+            Dte = None
 
-        EscalationLevel = request.form['EscalationLevel']
-        TriageTime = request.form['TriageTimehrs']
+        Smanager = request.form.get('SiteManager','')
 
-        WaitingTimeMajors = request.form['WaitingTimeMajorshrs']
-        if len(Smanager) == 0:
+        EscalationLevel = request.form.get('EscalationLevel','')
+        TriageTime = request.form.get('TriageTimehrs','')
+
+        WaitingTimeMajors = request.form.get('WaitingTimeMajorshrs','')
+
+        if not Dte:
+            msg = "Please enter a valid date"
+        elif len(Smanager) == 0:
             msg = "You must enter a site manager"
         elif not Smanager.isalpha():
             msg = "Site manager must only contain letters"
@@ -268,7 +282,7 @@ def adddailyrecord():
             msg = "Number of patients waiting in the corridor cannot exceed 50"
         elif PatientsInCorridor < 0:
             msg = "Number of patients waiting in the corridor cannot be less than 0 "
-        elif not re.match(r'[A-Za-z]+', EscalationLevel):
+        elif not re.match(r'^[A-Za-z]+$', EscalationLevel):
             msg = "Escalation level can only contain letters"
         elif EscalationLevel not in ("Red", "Amber", "Green"):
             msg = "Escalation level must be set as Red, Amber or Green"

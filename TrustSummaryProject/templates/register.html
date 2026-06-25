@@ -25,11 +25,15 @@
 			<input type="text" name="fullname" placeholder="Full name" id="fullname" required>
 
 			<label class="icon-label" for="accounttype" aria-label="Account type"><i class="fas fa-user-shield"></i></label>
-			<input type="text" name="accounttype" placeholder="Account type - Admin or User" id="accounttype" required>
+			<select name="accounttype" id="accounttype">
+				<option value="Admin">Admin</option>
+				<option value="User">User</option>
+			</select>
+				<input type="text" name="accounttype" placeholder="Account type - Admin or User" id="accounttype" required>
 
-			<div class="msg">{{ msg }}</div>
-			<input type="submit" value="Register">
-		</form>
+				<div class="msg">{{ msg }}</div>
+				<input type="submit" value="Register">
+</form>
 	</main>
 </body>
 </html>
