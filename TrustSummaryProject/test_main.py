@@ -17,3 +17,5 @@ class TestIntegerCheck(unittest.TestCase):
     def test_check_int_negative(self):
         self.assertEqual(check_int("5.2"), 5.2)
 
+if __name__ == '__main__':
+    unittest.main()
